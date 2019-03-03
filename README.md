@@ -8,7 +8,7 @@ tool, available for download [here](http://users.cecs.anu.edu.au/~bdm/plantri).
 ```GO
 package main
 
-import "github.com/bubblyworld/plantri"
+import "github.com/bubblyworld/plantri-go"
 
 func main() {
   graphs, err := plantri.Load("10.tri")
