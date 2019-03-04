@@ -34,7 +34,8 @@ type Edge struct {
 	Dest   Vertex
 }
 
-// AdjMatrix is a graph with edges represented by an adjacency matrix.
+// AdjMatrix is a graph with edges represented by an adjacency matrix. Vertices
+// of an AdjMatrix are labelled by their index in the matrix, beginning at 0.
 type AdjMatrix struct {
 	n      int
 	matrix [][]bool
@@ -94,7 +95,7 @@ func (am *AdjMatrix) getVertex(i int) (*adjMatrixVertex, error) {
 		return nil, ErrAdjMatrixOutOfBounds
 	}
 
-	return &adjMatrixVertex{}, nil
+	return &adjMatrixVertex{index: i}, nil
 }
 
 func (am *AdjMatrix) addEdge(i, j int) error {
