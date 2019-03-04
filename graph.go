@@ -7,8 +7,14 @@ import (
 
 var ErrAdjMatrixOutOfBounds = errors.New("plantri: adjacency matrix vertex index out of bounds")
 
-// Graph is an abstraction of a simple graph.
+// Graph is an abstraction of a simple graph with labelled vertices.
 type Graph interface {
+	// Size returns the number of edges in the graph.
+	Size() int
+
+	// Order returns the number of vertices in the graph.
+	Order() int
+
 	// Vertices returns the list of vertices in the graph.
 	Vertices() []Vertex
 
@@ -18,8 +24,8 @@ type Graph interface {
 
 // Vertex represents a vertex in a simple graph.
 type Vertex interface {
-	// Neighbours returns all neighbouring vertices of this vertex.
-	Neighbours() []Vertex
+	// Id returns the label associated with this vertex.
+	Id() int
 }
 
 // Edge represents a directed edge between two vertices.
@@ -28,13 +34,13 @@ type Edge struct {
 	Dest   Vertex
 }
 
-// adjMatrix is a graph with edges represented by an adjacency matrix.
-type adjMatrix struct {
+// AdjMatrix is a graph with edges represented by an adjacency matrix.
+type AdjMatrix struct {
 	n      int
 	matrix [][]bool
 }
 
-func newAdjMatrix(n int) *adjMatrix {
+func newAdjMatrix(n int) *AdjMatrix {
 	var matrix [][]bool
 	for i := 0; i < n; i++ {
 		matrix = append(matrix, []bool{})
@@ -48,28 +54,50 @@ func newAdjMatrix(n int) *adjMatrix {
 		}
 	}
 
-	return &adjMatrix{
+	return &AdjMatrix{
 		n:      n,
 		matrix: matrix,
 	}
 }
+func AsAdjMatrix(g Graph) *AdjMatrix {
+	if am, ok := g.(*AdjMatrix); ok {
+		return am
+	}
 
-func (am *adjMatrix) inBounds(i int) bool {
+	var vlabels []int
+	for _, v := range g.Vertices() {
+		vlabels = append(vlabels, v.Id())
+	}
+
+	vindexes := make(map[int]int)
+	for i, vlabel := range vlabels {
+		vindexes[vlabel] = i
+	}
+
+	res := newAdjMatrix(g.Order())
+	for _, e := range g.Edges() {
+		err := res.addEdge(vindexes[e.Source.Id()], vindexes[e.Dest.Id()])
+		if err != nil { // should never happen
+			panicUnexpected("AsAdjMatrix", err)
+		}
+	}
+
+	return res
+}
+
+func (am *AdjMatrix) inBounds(i int) bool {
 	return i >= 0 && i < am.n
 }
 
-func (am *adjMatrix) getVertex(i int) (*adjMatrixVertex, error) {
+func (am *AdjMatrix) getVertex(i int) (*adjMatrixVertex, error) {
 	if !am.inBounds(i) {
 		return nil, ErrAdjMatrixOutOfBounds
 	}
 
-	return &adjMatrixVertex{
-		parent: am,
-		index:  i,
-	}, nil
+	return &adjMatrixVertex{}, nil
 }
 
-func (am *adjMatrix) addEdge(i, j int) error {
+func (am *AdjMatrix) addEdge(i, j int) error {
 	if !am.inBounds(i) || !am.inBounds(j) {
 		return ErrAdjMatrixOutOfBounds
 	}
@@ -79,7 +107,15 @@ func (am *adjMatrix) addEdge(i, j int) error {
 	return nil
 }
 
-func (am *adjMatrix) Vertices() []Vertex {
+func (am *AdjMatrix) Size() int {
+	return len(am.Edges())
+}
+
+func (am *AdjMatrix) Order() int {
+	return am.n
+}
+
+func (am *AdjMatrix) Vertices() []Vertex {
 	var res []Vertex
 
 	for i := 0; i < am.n; i++ {
@@ -94,7 +130,7 @@ func (am *adjMatrix) Vertices() []Vertex {
 	return res
 }
 
-func (am *adjMatrix) Edges() []Edge {
+func (am *AdjMatrix) Edges() []Edge {
 	var res []Edge
 
 	for i := 0; i < am.n; i++ {
@@ -125,31 +161,11 @@ func (am *adjMatrix) Edges() []Edge {
 
 // adjMatrixVertex is a vertex of an adjMatrix graph.
 type adjMatrixVertex struct {
-	index  int
-	parent *adjMatrix
+	index int
 }
 
-func (amv *adjMatrixVertex) Neighbours() []Vertex {
-	var res []Vertex
-
-	for i := 0; i < amv.parent.n; i++ {
-		if i == amv.index {
-			continue
-		}
-
-		if !amv.parent.matrix[amv.index][i] {
-			continue
-		}
-
-		v, err := amv.parent.getVertex(i)
-		if err != nil { // should never happen
-			panicUnexpected("adjMatrixVertex.Neighbours", err)
-		}
-
-		res = append(res, v)
-	}
-
-	return res
+func (amv *adjMatrixVertex) Id() int {
+	return amv.index
 }
 
 // panicUnexpected panics with a standard error message on errors that should
@@ -160,5 +176,5 @@ func panicUnexpected(fn string, err error) {
 }
 
 // Compile-time interface implementation checks.
-var _ Graph = new(adjMatrix)
+var _ Graph = new(AdjMatrix)
 var _ Vertex = new(adjMatrixVertex)
