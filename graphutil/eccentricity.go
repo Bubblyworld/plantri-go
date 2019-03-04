@@ -11,22 +11,20 @@ const (
 // Vertex eccentricities are calculated using the Floyd-Warshall algorithm
 // followed by a column scan to find the maximum distance between a given
 // vertex and any other in the graph.
-func Eccentricities(g plantri.Graph) map[int]int {
-	am := plantri.AsAdjMatrix(g)
-
+func Eccentricities(graph plantri.Graph) map[int]int {
 	var dists [][]int
-	for i := 0; i < am.Order(); i++ {
+	for i := 0; i < graph.Order(); i++ {
 		dists = append(dists, []int{})
 
-		for j := 0; j < am.Order(); j++ {
+		for j := 0; j < graph.Order(); j++ {
 			dists[i] = append(dists[i], maxint)
 		}
 	}
 
 	// Initial distances.
-	for _, e := range am.Edges() {
-		i1 := e.Source.Id()
-		i2 := e.Dest.Id()
+	for _, e := range graph.Edges() {
+		i1 := e.Source.Label()
+		i2 := e.Dest.Label()
 
 		dists[i1][i2] = 1
 		dists[i2][i1] = 1
@@ -38,9 +36,9 @@ func Eccentricities(g plantri.Graph) map[int]int {
 
 	// Floyd-Warshall algorithm - provides minimum distance between all
 	// pairs of vertices of the grpah in O(n^3) time.
-	for k := 0; k < am.Order(); k++ {
-		for i := 0; i < am.Order(); i++ {
-			for j := 0; j < am.Order(); j++ {
+	for k := 0; k < graph.Order(); k++ {
+		for i := 0; i < graph.Order(); i++ {
+			for j := 0; j < graph.Order(); j++ {
 				if dists[i][k]+dists[k][j] < dists[i][j] {
 					dists[i][j] = dists[i][k] + dists[k][j]
 				}
@@ -48,16 +46,22 @@ func Eccentricities(g plantri.Graph) map[int]int {
 		}
 	}
 
-	res := make(map[int]int)
-	for i := 0; i < am.Order(); i++ {
+	eccToIndex := make(map[int]int)
+	for i := 0; i < graph.Order(); i++ {
 		ecc := -maxint
-		for j := 0; j < am.Order(); j++ {
+		for j := 0; j < graph.Order(); j++ {
 			if dists[i][j] > ecc {
 				ecc = dists[i][j]
 			}
 		}
 
-		res[i] = ecc
+		eccToIndex[i] = ecc
+	}
+
+	res := make(map[int]int)
+	indexToLabel := IndexToLabels(graph)
+	for ecc, i := range eccToIndex {
+		res[indexToLabel[i]] = ecc
 	}
 
 	return res
