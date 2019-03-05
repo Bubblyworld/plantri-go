@@ -28,6 +28,32 @@ func IndexToIds(graph plantri.Graph) map[int]int {
 	return res
 }
 
+// Neighbours returns a list of ids of neighbouring vertices of the vertex with
+// the given id. If the vertex doesn't exist, an empty list is returned.
+func Neighbours(graph plantri.Graph, id int) []int {
+	idSet := make(map[int]bool)
+	for _, e := range graph.Edges() {
+		if e.Source.Id() == e.Dest.Id() {
+			continue
+		}
+
+		if e.Source.Id() == id {
+			idSet[e.Dest.Id()] = true
+		}
+
+		if e.Dest.Id() == id {
+			idSet[e.Source.Id()] = true
+		}
+	}
+
+	var res []int
+	for nid := range idSet {
+		res = append(res, nid)
+	}
+
+	return res
+}
+
 // panicUnexpected panics with a standard error message on errors that should
 // never happen logically. This should only be called if there is a critical
 // failure in the code.
