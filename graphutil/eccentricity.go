@@ -1,13 +1,15 @@
 package graphutil
 
-import plantri "github.com/bubblyworld/plantri-go"
+import (
+	plantri "github.com/bubblyworld/plantri-go"
+)
 
 const (
 	maxuint = ^uint(0)
-	maxint  = int(maxuint >> 1)
+	maxint  = int(maxuint >> 2)
 )
 
-// Eccentricities returns a map of vertex eccentricity indexed by vertex label.
+// Eccentricities returns a map of vertex eccentricity indexed by vertex id.
 // Vertex eccentricities are calculated using the Floyd-Warshall algorithm
 // followed by a column scan to find the maximum distance between a given
 // vertex and any other in the graph.
@@ -22,17 +24,18 @@ func Eccentricities(graph plantri.Graph) map[int]int {
 	}
 
 	// Initial distances.
+	idsToIndex := IdsToIndex(graph)
+	for _, v := range graph.Vertices() {
+		i := idsToIndex[v.Id()]
+		dists[i][i] = 0
+	}
 	for _, e := range graph.Edges() {
-		i1 := e.Source.Label()
-		i2 := e.Dest.Label()
+		i1 := idsToIndex[e.Source.Id()]
+		i2 := idsToIndex[e.Dest.Id()]
 
 		dists[i1][i2] = 1
 		dists[i2][i1] = 1
 	}
-
-	// TODO(guy): We're really going to have to allow arbitrary labels -
-	// there's no mapping between an Graph's labels and it's corresponding
-	// AdjMatrix's labels.
 
 	// Floyd-Warshall algorithm - provides minimum distance between all
 	// pairs of vertices of the grpah in O(n^3) time.
@@ -46,7 +49,8 @@ func Eccentricities(graph plantri.Graph) map[int]int {
 		}
 	}
 
-	eccToIndex := make(map[int]int)
+	res := make(map[int]int)
+	indexToIds := IndexToIds(graph)
 	for i := 0; i < graph.Order(); i++ {
 		ecc := -maxint
 		for j := 0; j < graph.Order(); j++ {
@@ -55,13 +59,7 @@ func Eccentricities(graph plantri.Graph) map[int]int {
 			}
 		}
 
-		eccToIndex[i] = ecc
-	}
-
-	res := make(map[int]int)
-	indexToLabel := IndexToLabels(graph)
-	for ecc, i := range eccToIndex {
-		res[indexToLabel[i]] = ecc
+		res[indexToIds[i]] = ecc
 	}
 
 	return res

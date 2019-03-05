@@ -5,10 +5,10 @@ import (
 	"fmt"
 )
 
-var ErrAdjMatrixOutOfBounds = errors.New("plantri: adjacency matrix vertex index out of bounds")
+var ErrVertexNotFound = errors.New("plantri: vertex with that id doesn't exist")
 
-// Graph is an abstraction of a simple graph with labelled vertices. Each
-// vertex is guaranteed to have a unique label.
+// Graph is an abstraction of a simple graph. Each vertex is guaranteed to
+// have a unique identifier.
 type Graph interface {
 	// Size returns the number of edges in the graph.
 	Size() int
@@ -19,20 +19,26 @@ type Graph interface {
 	// Vertices returns the list of vertices in the graph. Two calls to
 	// this function will return the list of vertices in the same order so
 	// long as the graph hasn't changed in the interim.
+	// TODO(guy): Unit test this requirement
 	Vertices() []Vertex
 
 	// Edges returns the list of edges in the graph. Two calls to this function
 	// will return the list of edges in the same order so long as the graph
 	// hasn't changed in the interim.
+	// TODO(guy): Unit test this requirement
 	Edges() []Edge
+
+	// AddEdge adds an edge to the graph between the vertices with the given
+	// identifiers. Note that this may change the order of the lists returned
+	// by Vertices() and Edges().
+	AddEdge(int, int) error
 }
 
 // Vertex represents a vertex in a simple graph.
 type Vertex interface {
-	// Label returns the label associated with this vertex. This label is
+	// Id returns the identifier associated with this vertex. This id is
 	// guaranteed to be unique within any graph containing this vertex.
-	// TODO(guy): Unit test this requirement
-	Label() int
+	Id() int
 }
 
 // Edge represents a directed edge between two vertices.
@@ -42,13 +48,16 @@ type Edge struct {
 }
 
 // adjMatrix is a graph with edges represented by an adjacency matrix. Vertices
-// of an adjMatrix are labelled by their index in the matrix, beginning at 0.
+// of an adjMatrix are identified by their index in the matrix, beginning at 0.
+// TODO(guy): Unit test this requirement
 type adjMatrix struct {
 	n      int
 	matrix [][]bool
 }
 
-func newAdjMatrix(n int) *adjMatrix {
+// NewAdjMatrix returns the trivial graph on n vertices, with edges represented
+// by an n-by-n adjacency matrix.
+func NewAdjMatrix(n int) *adjMatrix {
 	var matrix [][]bool
 	for i := 0; i < n; i++ {
 		matrix = append(matrix, []bool{})
@@ -74,15 +83,15 @@ func (am *adjMatrix) inBounds(i int) bool {
 
 func (am *adjMatrix) getVertex(i int) (*adjMatrixVertex, error) {
 	if !am.inBounds(i) {
-		return nil, ErrAdjMatrixOutOfBounds
+		return nil, ErrVertexNotFound
 	}
 
 	return &adjMatrixVertex{index: i}, nil
 }
 
-func (am *adjMatrix) addEdge(i, j int) error {
+func (am *adjMatrix) AddEdge(i, j int) error {
 	if !am.inBounds(i) || !am.inBounds(j) {
-		return ErrAdjMatrixOutOfBounds
+		return ErrVertexNotFound
 	}
 
 	am.matrix[i][j] = true
@@ -142,12 +151,32 @@ func (am *adjMatrix) Edges() []Edge {
 	return res
 }
 
+// String is a Stringer implementation for adjMatrix for debugging.
+func (am *adjMatrix) String() string {
+	res := fmt.Sprintf("Adjacency Matrix Order(%d) Size(%d)\n",
+		am.Order(), am.Size())
+
+	for i := 0; i < am.n; i++ {
+		for j := 0; j < am.n; j++ {
+			if am.matrix[i][j] {
+				res += "1 "
+			} else {
+				res += "0 "
+			}
+		}
+
+		res += "\n"
+	}
+
+	return res
+}
+
 // adjMatrixVertex is a vertex of an adjMatrix graph.
 type adjMatrixVertex struct {
 	index int
 }
 
-func (amv *adjMatrixVertex) Label() int {
+func (amv *adjMatrixVertex) Id() int {
 	return amv.index
 }
 

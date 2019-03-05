@@ -89,7 +89,7 @@ func getGraphPlanarCode(data []byte, offset int) (Graph, int, error) {
 	}
 	cnt++
 
-	res := newAdjMatrix(int(n))
+	res := NewAdjMatrix(int(n))
 	for i := 0; i < int(n); i++ {
 		for {
 			v, err := buf.ReadByte()
@@ -102,7 +102,10 @@ func getGraphPlanarCode(data []byte, offset int) (Graph, int, error) {
 				break
 			}
 
-			res.addEdge(i, int(v)-1) // planarcode is 1-indexed
+			err = res.AddEdge(i, int(v)-1) // planarcode is 1-indexed
+			if err != nil {
+				return nil, 0, err
+			}
 		}
 	}
 
