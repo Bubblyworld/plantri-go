@@ -7,6 +7,7 @@ import (
 // ConnectedMonochromeSubsets takes a coloured graph (a graph along with an
 // map representing the "color" of each vertex, indexed by vertex id) and
 // decomposes it into maximal connected subsets of vertices of the same color.
+// TODO(guy): "Components" is the terminology here.
 func ConnectedMonochromeSubsets(graph plantri.Graph,
 	colors map[int]int) [][]plantri.Vertex {
 
