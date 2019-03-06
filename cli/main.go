@@ -62,10 +62,9 @@ func testEccentricityFn(graphs []plantri.Graph) {
 		eccs := graphutil.Eccentricities(graph)
 		comps := graphutil.ConnectedMonochromeSubsets(graph, eccs)
 
-		// If the conjecture is true, there should not be any disconnected
-		// subsets with the same eccentricity.
-		conjHolds := true
-		eccsSet := make(map[int]bool)
+		// If the conjecture is true, there should be at least one connected
+		// eccentricity level set.
+		eccCounts := make(map[int]int)
 		for _, comp := range comps {
 			if len(comp) == 0 {
 				continue
@@ -74,10 +73,14 @@ func testEccentricityFn(graphs []plantri.Graph) {
 			// Every vertex in the component will have the same eccentricity,
 			// as this is a postcondition of ConnectedMonochromeSubsets().
 			ecc := eccs[comp[0].Id()]
-			if eccsSet[ecc] {
-				conjHolds = false
+			eccCounts[ecc]++
+		}
+
+		conjHolds := false
+		for _, count := range eccCounts {
+			if count == 1 {
+				conjHolds = true
 			}
-			eccsSet[ecc] = true
 		}
 
 		fmt.Printf("  conjecture holds for graph %2d: %v\n", i, conjHolds)
